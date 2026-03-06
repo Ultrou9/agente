@@ -4,7 +4,12 @@ import { MessageRow } from '../memory/firestore.js';
 import { Tool } from '../tools/index.js';
 
 const groq = new Groq({ apiKey: env.GROQ_API_KEY });
-const DEFAULT_MODEL = env.OPENROUTER_MODEL || 'llama-3.3-70b-versatile';
+// Cambiamos el default al modelo rápido para evitar bloqueos por límite de uso
+const DEFAULT_MODEL = env.OPENROUTER_MODEL && env.OPENROUTER_MODEL !== 'openrouter/free'
+    ? env.OPENROUTER_MODEL
+    : 'llama-3.1-8b-instant';
+
+console.log(`[LLM] Usando modelo: ${DEFAULT_MODEL}`);
 
 export interface LLMResponse {
     content: string | null;

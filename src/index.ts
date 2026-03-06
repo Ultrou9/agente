@@ -31,7 +31,7 @@ if (WEBHOOK_URL) {
     });
 } else {
     // Modo polling: el bot pide mensajes a Telegram (para desarrollo local)
-    console.log("Iniciando en modo polling (local)...");
+    console.log("Iniciando en modo polling (instancia Railway/Local)...");
 
     createServer((_, res) => {
         res.writeHead(200);
@@ -40,14 +40,29 @@ if (WEBHOOK_URL) {
         console.log(`Servidor de salud corriendo en el puerto ${PORT}`);
     });
 
-    bot.start({
-        drop_pending_updates: true,
-        onStart: (botInfo) => {
-            console.log(`Bot conectado exitosamente como @${botInfo.username}`);
-            console.log("Esperando mensajes vía polling largo...");
+    // Limpieza agresiva de conexiones previas antes de empezar
+    async function startBot() {
+        try {
+            console.log("Limpiando conexiones previas de Telegram...");
+            await bot.api.deleteWebhook({ drop_pending_updates: true });
+
+            await bot.start({
+                drop_pending_updates: true,
+                onStart: (botInfo) => {
+                    console.log(`Bot conectado exitosamente como @${botInfo.username}`);
+                    console.log("Esperando mensajes vía polling largo...");
+                }
+            });
+        } catch (err: any) {
+            if (err.description?.includes('Conflict')) {
+                console.warn("Conflicto detectado, reintentando en 5 segundos...");
+                setTimeout(startBot, 5000);
+            } else {
+                console.error("Error crítico al iniciar el bot:", err);
+                process.exit(1);
+            }
         }
-    }).catch((err) => {
-        console.error("Error crítico al iniciar el bot:", err);
-        process.exit(1);
-    });
+    }
+
+    startBot();
 }
