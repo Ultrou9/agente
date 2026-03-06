@@ -14,7 +14,8 @@ export const search_web = {
         },
         required: ['query']
     },
-    execute: async ({ query }: { query: string }) => {
+    execute: async ({ query }: { query?: string }) => {
+        if (!query) return "Error: Falta el parámetro 'query'.";
         if (!env.TAVILY_API_KEY) {
             return "Error: TAVILY_API_KEY no está configurada en el servidor.";
         }
