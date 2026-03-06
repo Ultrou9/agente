@@ -29,14 +29,18 @@ async function authorize() {
         await fs.writeFile(tmpCredentials, credentialsJson);
         await fs.writeFile(tmpToken, tokenJson);
 
-        const env = { ...process.env, GOG_KEYRING_PASSWORD: process.env.GOG_KEYRING_PASSWORD || 'agente-password' };
+        const password = process.env.GOG_KEYRING_PASSWORD || 'agente-password';
+        const env = { ...process.env, GOG_KEYRING_PASSWORD: password };
+
+        console.log("[Google Tool] Configurando backend de llavero...");
+        await execPromise(`gog auth keyring file`, { env });
 
         console.log("[Google Tool] Configurando credenciales...");
         await execPromise(`gog auth credentials ${tmpCredentials}`, { env });
 
         console.log("[Google Tool] Importando tokens...");
-        // Usamos --overwrite para evitar preguntas
-        await execPromise(`gog auth tokens import ${tmpToken} --overwrite`, { env });
+        // Intentamos pasar la contraseña tanto en env como en el comando si fuera necesario
+        await execPromise(`GOG_KEYRING_PASSWORD=${password} gog auth tokens import ${tmpToken} --overwrite --no-input`, { env });
 
         isAuthorized = true;
         console.log("[Google Tool] Autorización completada exitosamente.");
