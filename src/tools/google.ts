@@ -29,11 +29,14 @@ async function authorize() {
         await fs.writeFile(tmpCredentials, credentialsJson);
         await fs.writeFile(tmpToken, tokenJson);
 
+        const env = { ...process.env, GOG_KEYRING_PASSWORD: process.env.GOG_KEYRING_PASSWORD || 'agente-password' };
+
         console.log("[Google Tool] Configurando credenciales...");
-        await execPromise(`gog auth credentials ${tmpCredentials}`);
+        await execPromise(`gog auth credentials ${tmpCredentials}`, { env });
 
         console.log("[Google Tool] Importando tokens...");
-        await execPromise(`gog auth tokens import ${tmpToken}`);
+        // Usamos --overwrite para evitar preguntas
+        await execPromise(`gog auth tokens import ${tmpToken} --overwrite`, { env });
 
         isAuthorized = true;
         console.log("[Google Tool] Autorización completada exitosamente.");
@@ -62,10 +65,11 @@ export const googleTool: Tool = {
 
             const account = process.env.GOG_ACCOUNT;
             const accountFlag = account ? `--account ${account}` : '';
+            const env = { ...process.env, GOG_KEYRING_PASSWORD: process.env.GOG_KEYRING_PASSWORD || 'agente-password' };
 
             // Limpiamos el comando por seguridad (muy básico)
             const cleanCommand = command.replace(/[;&|]|\.\.\//g, '');
-            const { stdout, stderr } = await execPromise(`gog ${cleanCommand} ${accountFlag} --json --no-input`);
+            const { stdout, stderr } = await execPromise(`gog ${cleanCommand} ${accountFlag} --json --no-input`, { env });
 
             if (stderr && !stdout) {
                 return { error: stderr };
