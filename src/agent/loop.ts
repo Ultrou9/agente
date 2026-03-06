@@ -31,6 +31,7 @@ INSTRUCCIONES DE HERRAMIENTAS:
    - Ejemplos: 'gmail search "is:unread"', 'calendar events primary', 'drive search "documento"'.
 3. Genera el comando de forma precisa y concisa.
 4. Si el usuario te pide algo de Google y necesitas más de un paso, ve uno a uno.
+5. Para buscar información en internet o conocer el clima actual, usa la herramienta 'search_web'.
 
 Reglas:
 1. Respeta siempre el contexto de la conversación.
