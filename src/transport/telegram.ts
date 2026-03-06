@@ -68,7 +68,7 @@ async function handleAudioMessage(ctx: any) {
         let extension = path.extname(file.file_path || "");
 
         // Mapear .oga a .ogg para compatibilidad con Groq
-        if (extension.toLowerCase() === '.oga') {
+        if (extension.toLowerCase() === '.oga' || !extension) {
             extension = '.ogg';
         }
 
@@ -81,7 +81,9 @@ async function handleAudioMessage(ctx: any) {
         if (!response.ok) throw new Error(`Error descargando audio: ${response.statusText}`);
 
         const arrayBuffer = await response.arrayBuffer();
-        fs.writeFileSync(tmpFilePath, Buffer.from(arrayBuffer));
+        const buffer = Buffer.from(arrayBuffer);
+        fs.writeFileSync(tmpFilePath, buffer);
+        console.log(`[Audio] Guardado: ${tmpFilePath} (${buffer.length} bytes)`);
 
         // 3. Transcribir
         const transcribedText = await transcribeAudio(tmpFilePath);

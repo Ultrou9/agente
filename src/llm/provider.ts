@@ -71,11 +71,17 @@ export async function generateResponse(
 export async function transcribeAudio(filePath: string): Promise<string> {
     const fs = await import('fs');
     try {
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`El archivo de audio no existe en la ruta: ${filePath}`);
+        }
+
+        console.log(`[LLM] Enviando a transcribir: ${filePath}`);
+
         const transcription = await groq.audio.transcriptions.create({
             file: fs.createReadStream(filePath),
             model: "whisper-large-v3-turbo",
             response_format: "json",
-            language: "es", // Optional: Hardcoded to Spanish to improve accuracy for this bot, but can be removed to auto-detect
+            language: "es",
         });
         return transcription.text;
     } catch (error: any) {
