@@ -65,7 +65,13 @@ async function handleAudioMessage(ctx: any) {
     try {
         // 1. Obtener detalles del archivo
         const file = await ctx.getFile();
-        const extension = path.extname(file.file_path || "");
+        let extension = path.extname(file.file_path || "");
+
+        // Mapear .oga a .ogg para compatibilidad con Groq
+        if (extension.toLowerCase() === '.oga') {
+            extension = '.ogg';
+        }
+
         tmpFilePath = path.join(os.tmpdir(), `audio_${audioData.file_id}${extension}`);
 
         const fileUrl = `https://api.telegram.org/file/bot${env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
