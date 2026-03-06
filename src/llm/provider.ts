@@ -36,9 +36,13 @@ export async function generateResponse(
         { role: 'system', content: systemPrompt }
     ];
 
+    // Si hay imagen, limitamos el historial para evitar errores de contexto/roles en modelos preview
+    const historyLimit = image ? 5 : messages.length;
+    const recentMessages = messages.slice(-historyLimit);
+
     // Mapear mensajes y adjuntar imagen al último mensaje de usuario si existe
-    messages.forEach((m, index) => {
-        const isLastMessage = index === messages.length - 1;
+    recentMessages.forEach((m, index) => {
+        const isLastMessage = index === recentMessages.length - 1;
 
         if (image && isLastMessage && m.role === 'user') {
             console.log(`[LLM] Adjuntando imagen al último mensaje de usuario.`);
@@ -64,8 +68,8 @@ export async function generateResponse(
 
     // Si por alguna razón (lag de DB) el último mensaje no es del usuario pero tenemos imagen, 
     // forzamos una entrada de usuario con la imagen si es la primera iteración.
-    if (image && messages.length > 0 && messages[messages.length - 1].role !== 'user') {
-        console.warn("[LLM] Advertencia: Se pasó imagen pero el último mensaje no es 'user'. El lag de la DB podría estar afectando.");
+    if (image && recentMessages.length > 0 && recentMessages[recentMessages.length - 1].role !== 'user') {
+        console.warn("[LLM] Advertencia: Se pasó imagen pero el último mensaje no es 'user'.");
     }
 
     const formattedTools: any[] = tools.map(t => ({
@@ -84,17 +88,27 @@ export async function generateResponse(
         const finalTools = image ? undefined : (formattedTools.length > 0 ? formattedTools : undefined);
         const finalToolChoice = image ? undefined : (formattedTools.length > 0 ? 'auto' : 'none');
 
+        const startTime = Date.now();
         const response = await groq.chat.completions.create({
             messages: formattedMessages,
             model: selectedModel,
             tools: finalTools,
             tool_choice: finalToolChoice,
         });
+        const duration = Date.now() - startTime;
 
-        console.log(`[LLM] Respuesta recibida de Groq exitosamente.`);
+        console.log(`[LLM] Respuesta de Groq recibida en ${duration}ms. ID: ${response.id}`);
+
+        if (!response.choices || response.choices.length === 0) {
+            console.error("[LLM] ¡Error! Groq devolvió una respuesta sin 'choices'.");
+            throw new Error('Groq devolvió una respuesta vacía.');
+        }
 
         const choice = response.choices[0];
         const message = choice.message;
+
+        console.log(`[LLM] Finish Reason: ${choice.finish_reason}`);
+        console.log(`[LLM] Contenido (100 chars): ${message.content?.substring(0, 100) || "VACÍO"}`);
 
         return {
             content: message.content,
@@ -108,7 +122,8 @@ export async function generateResponse(
         console.error('Error with Groq API:', error.message);
         if (error.status) console.error(`Status: ${error.status}`);
         if (error.error) console.error(`Detalles: ${JSON.stringify(error.error)}`);
-        throw new Error('Fallo en la comunicación con el LLM principal.');
+        console.error(`[LLM] Contexto: ${formattedMessages.length} msgs. Model: ${selectedModel}`);
+        throw new Error(`Error en LLM: ${error.message}`);
     }
 }
 
