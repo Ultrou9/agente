@@ -53,45 +53,48 @@ bot.on("message:text", async (ctx) => {
     }
 });
 
-// Manejador de notas de voz
-bot.on("message:voice", async (ctx) => {
+// Manejador genérico para procesar audio (voice o audio)
+async function handleAudioMessage(ctx: any) {
     const userId = ctx.from?.id?.toString() || "default";
-    const voice = ctx.message.voice;
+    const audioData = ctx.message.voice || ctx.message.audio;
+    if (!audioData) return;
 
     await ctx.replyWithChatAction("typing");
 
+    const tmpFilePath = path.join(os.tmpdir(), `audio_${audioData.file_id}`);
+
     try {
-        // 1. Obtener detalles del archivo desde los servidores de Telegram
+        // 1. Obtener detalles del archivo
         const file = await ctx.getFile();
         const fileUrl = `https://api.telegram.org/file/bot${env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
 
-        // 2. Descargar el archivo temporalmente
-        const tmpFilePath = path.join(os.tmpdir(), `voice_${voice.file_id}.ogg`);
+        // 2. Descargar el archivo
         const response = await fetch(fileUrl);
-
-        if (!response.ok) {
-            throw new Error(`Error descargando audio: ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`Error descargando audio: ${response.statusText}`);
 
         const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        fs.writeFileSync(tmpFilePath, buffer);
+        fs.writeFileSync(tmpFilePath, Buffer.from(arrayBuffer));
 
-        // 3. Transcribir el audio usando Groq Whisper
+        // 3. Transcribir
         const transcribedText = await transcribeAudio(tmpFilePath);
 
-        // 4. Borrar el archivo temporal para no ocupar espacio
-        fs.unlinkSync(tmpFilePath);
+        // 4. Feedback visual (transcripción)
+        await ctx.reply(`🎙️ _"${transcribedText}"_`, { parse_mode: "Markdown" });
 
-        // 5. Enviar un feedback visual de que se entendió el audio (opcional)
-        // await ctx.reply(`🎙️ _"${transcribedText}"_`, { parse_mode: "Markdown" });
-
-        // 6. Procesar el texto transcrito como si fuera un mensaje de texto normal
+        // 5. Procesar como mensaje normal
         const reply = await processUserMessage(userId, transcribedText);
         await ctx.reply(reply);
 
     } catch (error: any) {
-        console.error("Error procesando nota de voz:", error);
-        await ctx.reply("Lo siento, hubo un problema procesando tu nota de voz y no pude transcribirla o responderla.");
+        console.error("Error procesando audio:", error);
+        await ctx.reply("Lo siento, hubo un problema procesando tu mensaje de voz/audio.");
+    } finally {
+        // 6. Limpieza garantizada
+        if (fs.existsSync(tmpFilePath)) {
+            fs.unlinkSync(tmpFilePath);
+        }
     }
-});
+}
+
+bot.on("message:voice", handleAudioMessage);
+bot.on("message:audio", handleAudioMessage);
