@@ -6,6 +6,7 @@ import { transcribeAudio } from '../llm/provider.js';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import axios from 'axios';
 
 if (!env.TELEGRAM_BOT_TOKEN) {
     throw new Error("TELEGRAM_BOT_TOKEN es necesario para iniciar el bot.");
@@ -122,32 +123,32 @@ bot.on("message:photo", async (ctx) => {
 
     let tmpFilePath = "";
     try {
+        console.log(`[Vision] Solicitud de ${userId}. Descargando foto...`);
+
         // 1. Obtener detalles y descargar
         const file = await ctx.api.getFile(largestPhoto.file_id);
         const extension = path.extname(file.file_path || "") || ".jpg";
         tmpFilePath = path.join(os.tmpdir(), `photo_${largestPhoto.file_id}${extension}`);
 
         const fileUrl = `https://api.telegram.org/file/bot${env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
-        const response = await fetch(fileUrl);
-        if (!response.ok) throw new Error(`Error descargando foto: ${response.statusText}`);
 
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+        const buffer = Buffer.from(response.data);
         fs.writeFileSync(tmpFilePath, buffer);
 
         // 2. Convertir a base64 para el LLM
         const base64Data = buffer.toString('base64');
         const mimeType = extension === '.png' ? 'image/png' : 'image/jpeg';
 
-        console.log(`[Vision] Imagen recibida (${buffer.length} bytes). Procesando...`);
+        console.log(`[Vision] Imagen descargada (${buffer.length} bytes). Analizando...`);
 
         // 3. Procesar con el loop del agente
         const reply = await processUserMessage(userId, caption, { data: base64Data, mimeType });
         await ctx.reply(reply);
 
     } catch (error: any) {
-        console.error("Error procesando imagen:", error);
-        await ctx.reply("Lo siento, hubo un problema analizando la imagen.");
+        console.error("Error procesando imagen:", error.message);
+        await ctx.reply("Lo siento, hubo un problema analizando la imagen. Por favor, intenta de nuevo.");
     } finally {
         if (tmpFilePath && fs.existsSync(tmpFilePath)) {
             fs.unlinkSync(tmpFilePath);

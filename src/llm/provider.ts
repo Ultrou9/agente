@@ -30,30 +30,43 @@ export async function generateResponse(
     const visionModel = "llama-3.2-11b-vision-preview";
     const selectedModel = image ? visionModel : DEFAULT_MODEL;
 
+    console.log(`[LLM] Generando respuesta con modelo: ${selectedModel}${image ? " (con imagen)" : ""}`);
+
     const formattedMessages: any[] = [
-        { role: 'system', content: systemPrompt },
-        ...messages.map((m, index) => {
-            // Si hay una imagen y es el último mensaje del usuario, lo hacemos multi-modal
-            if (image && index === messages.length - 1 && m.role === 'user') {
-                return {
-                    role: 'user',
-                    content: [
-                        { type: 'text', text: m.content },
-                        {
-                            type: 'image_url',
-                            image_url: {
-                                url: `data:${image.mimeType};base64,${image.data}`
-                            }
+        { role: 'system', content: systemPrompt }
+    ];
+
+    // Mapear mensajes y adjuntar imagen al último mensaje de usuario si existe
+    messages.forEach((m, index) => {
+        const isLastMessage = index === messages.length - 1;
+
+        if (image && isLastMessage && m.role === 'user') {
+            console.log(`[LLM] Adjuntando imagen al último mensaje de usuario.`);
+            formattedMessages.push({
+                role: 'user',
+                content: [
+                    { type: 'text', text: m.content },
+                    {
+                        type: 'image_url',
+                        image_url: {
+                            url: `data:${image.mimeType};base64,${image.data}`
                         }
-                    ]
-                };
-            }
-            return {
+                    }
+                ]
+            });
+        } else {
+            formattedMessages.push({
                 role: m.role,
                 content: m.content
-            };
-        })
-    ];
+            });
+        }
+    });
+
+    // Si por alguna razón (lag de DB) el último mensaje no es del usuario pero tenemos imagen, 
+    // forzamos una entrada de usuario con la imagen si es la primera iteración.
+    if (image && messages.length > 0 && messages[messages.length - 1].role !== 'user') {
+        console.warn("[LLM] Advertencia: Se pasó imagen pero el último mensaje no es 'user'. El lag de la DB podría estar afectando.");
+    }
 
     const formattedTools: any[] = tools.map(t => ({
         type: 'function',

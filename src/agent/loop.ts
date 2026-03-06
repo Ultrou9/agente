@@ -47,7 +47,18 @@ export async function processUserMessage(
         iterations++;
 
         // 2. Obtener historial reciente
-        const contextMessages = await memory.getMessages(sessionId, 20);
+        let contextMessages = await memory.getMessages(sessionId, 20);
+
+        // Si es la primera iteración y el mensaje actual no aparece (lag de DB), lo forzamos al final
+        if (iterations === 1 && (contextMessages.length === 0 || contextMessages[contextMessages.length - 1].content !== userMessage)) {
+            console.log("[Loop] Forzando inclusión de mensaje actual por posible lag de Firestore.");
+            contextMessages.push({
+                session_id: sessionId,
+                role: 'user',
+                content: userMessage,
+                timestamp: new Date().toISOString()
+            });
+        }
 
         // 3. Llamar al LLM (pasamos la imagen solo en la primera iteración si existe)
         const llmResponse = await generateResponse(
