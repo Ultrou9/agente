@@ -33,7 +33,11 @@ Reglas:
 `;
 };
 
-export async function processUserMessage(sessionId: string, userMessage: string): Promise<string> {
+export async function processUserMessage(
+    sessionId: string,
+    userMessage: string,
+    image?: { data: string; mimeType: string }
+): Promise<string> {
     // 1. Guardar mensaje del usuario en memoria
     await memory.addMessage(sessionId, 'user', userMessage);
 
@@ -45,8 +49,13 @@ export async function processUserMessage(sessionId: string, userMessage: string)
         // 2. Obtener historial reciente
         const contextMessages = await memory.getMessages(sessionId, 20);
 
-        // 3. Llamar al LLM
-        const llmResponse = await generateResponse(buildSystemPrompt(), contextMessages, availableTools);
+        // 3. Llamar al LLM (pasamos la imagen solo en la primera iteración si existe)
+        const llmResponse = await generateResponse(
+            buildSystemPrompt(),
+            contextMessages,
+            availableTools,
+            iterations === 1 ? image : undefined
+        );
 
         // 4. Si hay contenido de texto, guardarlo (incluso si hay llamadas a herramientas)
         if (llmResponse.content) {

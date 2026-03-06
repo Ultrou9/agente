@@ -24,14 +24,35 @@ export interface LLMResponse {
 export async function generateResponse(
     systemPrompt: string,
     messages: MessageRow[],
-    tools: Tool[]
+    tools: Tool[],
+    image?: { data: string; mimeType: string }
 ): Promise<LLMResponse> {
+    const visionModel = "llama-3.2-11b-vision-preview";
+    const selectedModel = image ? visionModel : DEFAULT_MODEL;
+
     const formattedMessages: any[] = [
         { role: 'system', content: systemPrompt },
-        ...messages.map(m => ({
-            role: m.role,
-            content: m.content
-        }))
+        ...messages.map((m, index) => {
+            // Si hay una imagen y es el último mensaje del usuario, lo hacemos multi-modal
+            if (image && index === messages.length - 1 && m.role === 'user') {
+                return {
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: m.content },
+                        {
+                            type: 'image_url',
+                            image_url: {
+                                url: `data:${image.mimeType};base64,${image.data}`
+                            }
+                        }
+                    ]
+                };
+            }
+            return {
+                role: m.role,
+                content: m.content
+            };
+        })
     ];
 
     const formattedTools: any[] = tools.map(t => ({
@@ -46,7 +67,7 @@ export async function generateResponse(
     try {
         const response = await groq.chat.completions.create({
             messages: formattedMessages,
-            model: DEFAULT_MODEL,
+            model: selectedModel,
             tools: formattedTools.length > 0 ? formattedTools : undefined,
             tool_choice: formattedTools.length > 0 ? 'auto' : 'none',
         });
@@ -64,7 +85,6 @@ export async function generateResponse(
         };
     } catch (error) {
         console.error('Error with Groq API:', error);
-        // TODO: Implement OpenRouter Fallback here
         throw new Error('Fallo en la comunicación con el LLM principal.');
     }
 }

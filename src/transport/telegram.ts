@@ -109,5 +109,51 @@ async function handleAudioMessage(ctx: any) {
     }
 }
 
+// Manejador para fotos (Visión)
+bot.on("message:photo", async (ctx) => {
+    const userId = ctx.from?.id?.toString() || "default";
+    const photo = ctx.message.photo;
+    const caption = ctx.message.caption || "¿Qué ves en esta imagen?";
+
+    // Tomamos la versión más grande de la foto
+    const largestPhoto = photo[photo.length - 1];
+
+    await ctx.replyWithChatAction("typing");
+
+    let tmpFilePath = "";
+    try {
+        // 1. Obtener detalles y descargar
+        const file = await ctx.api.getFile(largestPhoto.file_id);
+        const extension = path.extname(file.file_path || "") || ".jpg";
+        tmpFilePath = path.join(os.tmpdir(), `photo_${largestPhoto.file_id}${extension}`);
+
+        const fileUrl = `https://api.telegram.org/file/bot${env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
+        const response = await fetch(fileUrl);
+        if (!response.ok) throw new Error(`Error descargando foto: ${response.statusText}`);
+
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        fs.writeFileSync(tmpFilePath, buffer);
+
+        // 2. Convertir a base64 para el LLM
+        const base64Data = buffer.toString('base64');
+        const mimeType = extension === '.png' ? 'image/png' : 'image/jpeg';
+
+        console.log(`[Vision] Imagen recibida (${buffer.length} bytes). Procesando...`);
+
+        // 3. Procesar con el loop del agente
+        const reply = await processUserMessage(userId, caption, { data: base64Data, mimeType });
+        await ctx.reply(reply);
+
+    } catch (error: any) {
+        console.error("Error procesando imagen:", error);
+        await ctx.reply("Lo siento, hubo un problema analizando la imagen.");
+    } finally {
+        if (tmpFilePath && fs.existsSync(tmpFilePath)) {
+            fs.unlinkSync(tmpFilePath);
+        }
+    }
+});
+
 bot.on("message:voice", handleAudioMessage);
 bot.on("message:audio", handleAudioMessage);
