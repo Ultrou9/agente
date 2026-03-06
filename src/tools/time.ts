@@ -7,7 +7,7 @@ export const getCurrentTimeTool: Tool = {
         type: 'object',
         properties: {},
     },
-    execute: () => {
+    execute: (_args: Record<string, any>, _context: any) => {
         const now = new Date();
         return {
             time: now.toISOString(),

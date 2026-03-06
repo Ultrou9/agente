@@ -1,3 +1,7 @@
+export interface ToolContext {
+    sessionId: string;
+}
+
 export interface Tool {
     name: string;
     description: string;
@@ -6,5 +10,5 @@ export interface Tool {
         properties: Record<string, any>;
         required?: string[];
     };
-    execute: (args: Record<string, any>) => Promise<any> | any;
+    execute: (args: Record<string, any>, context: ToolContext) => Promise<any> | any;
 }

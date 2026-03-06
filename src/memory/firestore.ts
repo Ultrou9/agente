@@ -112,5 +112,44 @@ export const memory = {
             }
         }
         return null;
+    },
+
+    // --- Recordatorios ---
+    addReminder: async (sessionId: string, userId: number, message: string, targetTime: Date): Promise<void> => {
+        if (!db) return;
+        const remindersRef = db.collection('reminders');
+        await remindersRef.add({
+            session_id: sessionId,
+            user_id: userId,
+            message: message,
+            target_time: targetTime.toISOString(),
+            status: 'pending',
+            created_at: new Date().toISOString()
+        });
+    },
+
+    getPendingReminders: async (): Promise<any[]> => {
+        if (!db) return [];
+        const remindersRef = db.collection('reminders');
+        const now = new Date().toISOString();
+
+        const snapshot = await remindersRef
+            .where('status', '==', 'pending')
+            .where('target_time', '<=', now)
+            .get();
+
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    },
+
+    markReminderAsSent: async (id: string): Promise<void> => {
+        if (!db) return;
+        const reminderRef = db.collection('reminders').doc(id);
+        await reminderRef.update({
+            status: 'sent',
+            sent_at: new Date().toISOString()
+        });
     }
 };

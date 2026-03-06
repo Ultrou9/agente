@@ -63,7 +63,7 @@ export const googleTool: Tool = {
         },
         required: ["command"]
     },
-    execute: async ({ command }) => {
+    execute: async ({ command }, _context) => {
         try {
             await authorize();
 

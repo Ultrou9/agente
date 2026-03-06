@@ -2,11 +2,15 @@ import { memory } from '../memory/firestore.js';
 import { generateResponse } from '../llm/provider.js';
 import { Tool } from '../tools/index.js';
 import { googleTool } from '../tools/google.js';
+import { setReminderTool } from '../tools/reminder.js';
+import { getCurrentTimeTool } from '../tools/time.js';
 
 const MAX_ITERATIONS = 5;
 
 const availableTools: Tool[] = [
-    googleTool
+    googleTool,
+    setReminderTool,
+    getCurrentTimeTool
 ];
 
 const buildSystemPrompt = () => {
@@ -89,7 +93,7 @@ export async function processUserMessage(
             if (tool) {
                 try {
                     const args = JSON.parse(toolCall.arguments);
-                    const result = await tool.execute(args);
+                    const result = await tool.execute(args, { sessionId });
                     toolResultStr = JSON.stringify(result);
                 } catch (e: any) {
                     toolResultStr = `Error ejecutando herramienta: ${e.message}`;
