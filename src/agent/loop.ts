@@ -9,19 +9,29 @@ const availableTools: Tool[] = [
     googleTool
 ];
 
-const buildSystemPrompt = () => `
-Eres OpenGravity, un asistente de IA personal seguro y confiable.
+const buildSystemPrompt = () => {
+    const currentTime = new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' });
+
+    return `Eres OpenGravity, un asistente personal inteligente y proactivo.
 Tu memoria y estado están conectados a Firebase Firestore en la nube, de forma persistente.
 Respondes SIEMPRE en español. Eres conversacional, útil, y usas las herramientas a tu disposición
 para ayudar al usuario cuando es necesario.
 
-La fecha y hora actual es: ${new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })}.
+Hoy es ${currentTime}.
+
+INSTRUCCIONES DE HERRAMIENTAS:
+1. Para interactuar con Google (Gmail, Calendario, Drive), utiliza la herramienta 'google_workspace'.
+2. El parámetro 'command' debe ser un comando válido para la CLI 'gog'.
+   - Ejemplos: 'gmail search "is:unread"', 'calendar events primary', 'drive search "documento"'.
+3. Genera el comando de forma precisa y concisa.
+4. Si el usuario te pide algo de Google y necesitas más de un paso, ve uno a uno.
 
 Reglas:
 1. Respeta siempre el contexto de la conversación.
 2. Si un usuario pide algo que requiere herramientas que no tienes, explícaselo.
 3. Proporciona respuestas claras, estructuradas y precisas. No divagues.
 `;
+};
 
 export async function processUserMessage(sessionId: string, userMessage: string): Promise<string> {
     // 1. Guardar mensaje del usuario en memoria
@@ -69,8 +79,6 @@ export async function processUserMessage(sessionId: string, userMessage: string)
             }
 
             // Guardar el resultado en la base de datos simulando el rol 'tool' o 'system'
-            // En Groq/OpenAI, normalmente se enviaría esto de en un formato específico, 
-            // Por simplicidad en nuestra bd, lo guardaremos como 'system' con prefijo para contexto.
             await memory.addMessage(sessionId, 'system', `[Resultado Herramienta ${toolCall.name}]: ${toolResultStr}`);
         }
     }
