@@ -6,9 +6,7 @@ import path from 'path';
 
 const groq = new Groq({ apiKey: env.GROQ_API_KEY });
 // Cambiamos el default al modelo rápido para evitar bloqueos por límite de uso
-const DEFAULT_MODEL = env.OPENROUTER_MODEL && env.OPENROUTER_MODEL !== 'openrouter/free'
-    ? env.OPENROUTER_MODEL
-    : 'llama-3.1-8b-instant';
+const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
 
 console.log(`[LLM] Usando modelo: ${DEFAULT_MODEL}`);
 
@@ -59,9 +57,13 @@ export async function generateResponse(
                 ]
             });
         } else {
+            // Limpieza: si el contenido tiene etiquetas alucinadas de herramientas <function...>, las removemos
+            // para que el modelo no intente imitar el formato erróneo del pasado.
+            let cleanContent = (m.content || "").replace(/<function=.*?>.*?<\/function>/gs, '').trim();
+
             const msg: any = {
                 role: m.role,
-                content: m.content || ""
+                content: cleanContent || (m.role === 'assistant' && m.tool_calls ? null : "...")
             };
             if (m.tool_calls) msg.tool_calls = m.tool_calls;
             if (m.tool_call_id) msg.tool_call_id = m.tool_call_id;
