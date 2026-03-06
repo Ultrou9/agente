@@ -78,12 +78,20 @@ export async function generateResponse(
     }));
 
     try {
+        console.log(`[LLM] Enviando solicitud a Groq (${formattedMessages.length} mensajes)...`);
+
+        // Deshabilitamos herramientas si hay imagen (Llama 4 Scout preview puede tener problemas combinando ambos)
+        const finalTools = image ? undefined : (formattedTools.length > 0 ? formattedTools : undefined);
+        const finalToolChoice = image ? undefined : (formattedTools.length > 0 ? 'auto' : 'none');
+
         const response = await groq.chat.completions.create({
             messages: formattedMessages,
             model: selectedModel,
-            tools: formattedTools.length > 0 ? formattedTools : undefined,
-            tool_choice: formattedTools.length > 0 ? 'auto' : 'none',
+            tools: finalTools,
+            tool_choice: finalToolChoice,
         });
+
+        console.log(`[LLM] Respuesta recibida de Groq exitosamente.`);
 
         const choice = response.choices[0];
         const message = choice.message;
@@ -96,8 +104,10 @@ export async function generateResponse(
                 arguments: tc.function.arguments,
             }))
         };
-    } catch (error) {
-        console.error('Error with Groq API:', error);
+    } catch (error: any) {
+        console.error('Error with Groq API:', error.message);
+        if (error.status) console.error(`Status: ${error.status}`);
+        if (error.error) console.error(`Detalles: ${JSON.stringify(error.error)}`);
         throw new Error('Fallo en la comunicación con el LLM principal.');
     }
 }
