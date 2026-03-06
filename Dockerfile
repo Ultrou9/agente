@@ -1,6 +1,6 @@
 # Build gogcli
 FROM golang:1.23-alpine AS gog-builder
-RUN apk add --no-cache git make
+RUN apk add --no-cache git make bash
 RUN git clone https://github.com/steipete/gogcli.git /go/src/gogcli
 WORKDIR /go/src/gogcli
 RUN make build && cp bin/gog /usr/local/bin/gog
