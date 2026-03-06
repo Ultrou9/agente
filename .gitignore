@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+memory.db
+service-account.json
+*.img
+*.png
+/Users/javierandrescalderongrimaldos/Desktop/gog_token.json
