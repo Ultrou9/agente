@@ -4,13 +4,15 @@ import { Tool } from '../tools/index.js';
 import { googleTool } from '../tools/google.js';
 import { setReminderTool } from '../tools/reminder.js';
 import { getCurrentTimeTool } from '../tools/time.js';
+import { search_web } from '../tools/search.js';
 
 const MAX_ITERATIONS = 5;
 
 const availableTools: Tool[] = [
     googleTool,
     setReminderTool,
-    getCurrentTimeTool
+    getCurrentTimeTool,
+    search_web
 ];
 
 const buildSystemPrompt = () => {
