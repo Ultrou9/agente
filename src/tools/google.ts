@@ -39,8 +39,8 @@ async function authorize() {
         await execPromise(`gog auth credentials ${tmpCredentials}`, { env });
 
         console.log("[Google Tool] Importando tokens...");
-        // Intentamos pasar la contraseña tanto en env como en el comando si fuera necesario
-        await execPromise(`GOG_KEYRING_PASSWORD=${password} gog auth tokens import ${tmpToken} --overwrite --no-input`, { env });
+        // Eliminamos --overwrite que no existe en esta versión
+        await execPromise(`GOG_KEYRING_PASSWORD=${password} gog auth tokens import ${tmpToken} --no-input`, { env });
 
         isAuthorized = true;
         console.log("[Google Tool] Autorización completada exitosamente.");
