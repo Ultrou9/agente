@@ -2,6 +2,7 @@ import { Groq } from 'groq-sdk';
 import { env } from '../config/env.js';
 import { MessageRow } from '../memory/firestore.js';
 import { Tool } from '../tools/index.js';
+import path from 'path';
 
 const groq = new Groq({ apiKey: env.GROQ_API_KEY });
 // Cambiamos el default al modelo rápido para evitar bloqueos por límite de uso
@@ -75,10 +76,14 @@ export async function transcribeAudio(filePath: string): Promise<string> {
             throw new Error(`El archivo de audio no existe en la ruta: ${filePath}`);
         }
 
-        console.log(`[LLM] Enviando a transcribir: ${filePath}`);
+        const { File } = await import('buffer');
+        const buffer = fs.readFileSync(filePath);
+        const fileName = path.basename(filePath);
+
+        console.log(`[LLM] Enviando a transcribir: ${fileName} (${buffer.length} bytes)`);
 
         const transcription = await groq.audio.transcriptions.create({
-            file: fs.createReadStream(filePath),
+            file: new File([buffer], fileName, { type: 'audio/ogg' }),
             model: "whisper-large-v3-turbo",
             response_format: "json",
             language: "es",

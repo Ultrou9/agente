@@ -23,6 +23,9 @@ const requireWhitelist = async (ctx: Context, next: NextFunction) => {
         return;
     }
 
+    const msgType = ctx.message?.text ? "texto" : ctx.message?.voice ? "voz" : ctx.message?.audio ? "audio" : "otro";
+    console.log(`[Telegram] Mensaje de ${userId} (tipo: ${msgType})`);
+
     await next();
 };
 

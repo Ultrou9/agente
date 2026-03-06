@@ -6,8 +6,10 @@ import { env } from './config/env.js';
 const PORT = parseInt(process.env.PORT || '7860', 10);
 const WEBHOOK_URL = process.env.BOT_WEBHOOK_URL; // e.g. https://ultrou2-agente.hf.space
 
+const VERSION = "2026-03-06.1315"; // Timestamp para seguimiento de despliegue
 const INSTANCE_ID = Math.random().toString(36).substring(7);
-console.log(`[${INSTANCE_ID}] Iniciando OpenGravity...`);
+
+console.log(`[${INSTANCE_ID}] [VERSION: ${VERSION}] Iniciando OpenGravity...`);
 console.log(`[${INSTANCE_ID}] Whitelist cargada para los usuarios: ${env.TELEGRAM_ALLOWED_USER_IDS}`);
 console.log(`[${INSTANCE_ID}] Base de datos en: ${env.DB_PATH}`);
 
