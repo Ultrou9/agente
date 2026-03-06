@@ -41,6 +41,7 @@ if (WEBHOOK_URL) {
     });
 
     bot.start({
+        drop_pending_updates: true,
         onStart: (botInfo) => {
             console.log(`Bot conectado exitosamente como @${botInfo.username}`);
             console.log("Esperando mensajes vía polling largo...");
