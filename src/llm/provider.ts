@@ -27,7 +27,7 @@ export async function generateResponse(
     tools: Tool[],
     image?: { data: string; mimeType: string }
 ): Promise<LLMResponse> {
-    const visionModel = "llama-3.2-11b-vision-preview";
+    const visionModel = "meta-llama/llama-4-scout-17b-16e-instruct";
     const selectedModel = image ? visionModel : DEFAULT_MODEL;
 
     console.log(`[LLM] Generando respuesta con modelo: ${selectedModel}${image ? " (con imagen)" : ""}`);
