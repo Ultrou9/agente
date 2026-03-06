@@ -61,11 +61,13 @@ async function handleAudioMessage(ctx: any) {
 
     await ctx.replyWithChatAction("typing");
 
-    const tmpFilePath = path.join(os.tmpdir(), `audio_${audioData.file_id}`);
-
+    let tmpFilePath = "";
     try {
         // 1. Obtener detalles del archivo
         const file = await ctx.getFile();
+        const extension = path.extname(file.file_path || "");
+        tmpFilePath = path.join(os.tmpdir(), `audio_${audioData.file_id}${extension}`);
+
         const fileUrl = `https://api.telegram.org/file/bot${env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
 
         // 2. Descargar el archivo
