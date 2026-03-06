@@ -37,21 +37,34 @@ export interface MessageRow {
     role: 'system' | 'user' | 'assistant' | 'tool';
     content: string;
     timestamp: string;
+    tool_calls?: any[];
+    tool_call_id?: string;
 }
 
 export const memory = {
-    addMessage: async (sessionId: string, role: string, content: string): Promise<void> => {
+    addMessage: async (
+        sessionId: string,
+        role: string,
+        content: string,
+        toolCalls?: any[],
+        toolCallId?: string
+    ): Promise<void> => {
         if (!db) {
             console.warn("Intento de escribir mensaje fallido: Firebase no inicializado");
             return;
         }
         const messagesRef = db.collection('messages');
-        await messagesRef.add({
+        const data: any = {
             session_id: sessionId,
             role: role,
-            content: content,
+            content: content || "",
             timestamp: new Date().toISOString()
-        });
+        };
+
+        if (toolCalls) data.tool_calls = toolCalls;
+        if (toolCallId) data.tool_call_id = toolCallId;
+
+        await messagesRef.add(data);
     },
 
     getMessages: async (sessionId: string, limit: number = 50): Promise<MessageRow[]> => {

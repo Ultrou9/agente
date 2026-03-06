@@ -72,9 +72,17 @@ export async function processUserMessage(
             iterations === 1 ? image : undefined
         );
 
-        // 4. Si hay contenido de texto, guardarlo (incluso si hay llamadas a herramientas)
-        if (llmResponse.content) {
-            await memory.addMessage(sessionId, 'assistant', llmResponse.content);
+        // 4. Si hay contenido de texto o llamadas a herramientas, guardarlo
+        if (llmResponse.content || (llmResponse.toolCalls && llmResponse.toolCalls.length > 0)) {
+            const rawToolCalls = llmResponse.toolCalls?.map(tc => ({
+                id: tc.id,
+                type: 'function',
+                function: {
+                    name: tc.name,
+                    arguments: tc.arguments
+                }
+            }));
+            await memory.addMessage(sessionId, 'assistant', llmResponse.content || "", rawToolCalls);
         }
 
         // 5. Verificar si hay llamadas a herramientas
@@ -102,8 +110,8 @@ export async function processUserMessage(
                 toolResultStr = `Error: Herramienta '${toolCall.name}' no encontrada.`;
             }
 
-            // Guardar el resultado en la base de datos simulando el rol 'tool' o 'system'
-            await memory.addMessage(sessionId, 'system', `[Resultado Herramienta ${toolCall.name}]: ${toolResultStr}`);
+            // Guardar el resultado con el rol 'tool' y el ID de la llamada
+            await memory.addMessage(sessionId, 'tool', toolResultStr, undefined, toolCall.id);
         }
     }
 

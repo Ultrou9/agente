@@ -59,10 +59,14 @@ export async function generateResponse(
                 ]
             });
         } else {
-            formattedMessages.push({
+            const msg: any = {
                 role: m.role,
-                content: m.content
-            });
+                content: m.content || ""
+            };
+            if (m.tool_calls) msg.tool_calls = m.tool_calls;
+            if (m.tool_call_id) msg.tool_call_id = m.tool_call_id;
+
+            formattedMessages.push(msg);
         }
     });
 
