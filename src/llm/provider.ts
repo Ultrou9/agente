@@ -4,7 +4,7 @@ import { MessageRow } from '../memory/firestore.js';
 import { Tool } from '../tools/index.js';
 
 const groq = new Groq({ apiKey: env.GROQ_API_KEY });
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = env.OPENROUTER_MODEL || 'llama-3.3-70b-versatile';
 
 export interface LLMResponse {
     content: string | null;
